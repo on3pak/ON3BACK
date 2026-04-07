@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
 import { CustomLogger } from '../../common/interfaces/custom-logger.service';
@@ -55,7 +60,7 @@ export class RolesService {
   async findOne(id: string) {
     const role = await this.prisma.role.findUnique({
       where: { id },
-      include: { permissions: true, users: { select: { id: true, username: true } } },
+      include: { permissions: true, users: { select: { id: true, userId: true, username: true } } },
     });
 
     if (!role) {
@@ -121,7 +126,13 @@ export class RolesService {
     return { message: 'Role deleted successfully' };
   }
 
-  private async createAuditLog(oldValue: any, newValue: any, action: string, entity: string, entityId: string) {
+  private async createAuditLog(
+    oldValue: any,
+    newValue: any,
+    action: string,
+    entity: string,
+    entityId: string,
+  ) {
     await this.prisma.auditLog.create({
       data: {
         action,

@@ -19,7 +19,7 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    const user = await this.usersService.findByUsername(loginDto.username);
+    const user = await this.usersService.findByUserId(loginDto.userId);
 
     if (!user.isActive) {
       throw new UnauthorizedException('User account is inactive');
@@ -42,6 +42,7 @@ export class AuthService {
       ...tokens,
       user: {
         id: user.id,
+        userId: user.userId,
         username: user.username,
         email: user.email,
         role: user.role.name,
@@ -53,6 +54,7 @@ export class AuthService {
     const existingUser = await this.prisma.user.findFirst({
       where: {
         OR: [
+          { userId: registerDto.userId },
           { username: registerDto.username },
           { email: registerDto.email },
         ],
@@ -60,7 +62,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new BadRequestException('Username or email already exists');
+      throw new BadRequestException('UserId, username or email already exists');
     }
 
     const defaultRole = await this.prisma.role.findUnique({ where: { name: 'USER' } });
@@ -72,6 +74,7 @@ export class AuthService {
 
     const user = await this.prisma.user.create({
       data: {
+        userId: registerDto.userId,
         username: registerDto.username,
         email: registerDto.email,
         password: hashedPassword,
@@ -90,6 +93,7 @@ export class AuthService {
       ...tokens,
       user: {
         id: user.id,
+        userId: user.userId,
         username: user.username,
         email: user.email,
         role: user.role.name,
@@ -135,12 +139,12 @@ export class AuthService {
     });
 
     const tokens = await this.generateTokens(storedToken.user);
-    
+
     await this.prisma.refreshToken.update({
       where: { id: storedToken.id },
       data: { revoked: true },
     });
-    
+
     await this.createRefreshToken(storedToken.userId, tokens.refreshToken);
 
     this.logger.log(`Tokens refreshed for user: ${storedToken.user.username}`, 'AuthService');
@@ -149,6 +153,7 @@ export class AuthService {
       ...tokens,
       user: {
         id: storedToken.user.id,
+        userId: storedToken.user.userId,
         username: storedToken.user.username,
         email: storedToken.user.email,
         role: storedToken.user.role.name,
@@ -166,6 +171,7 @@ export class AuthService {
   private async generateTokens(user: any): Promise<{ accessToken: string; refreshToken: string }> {
     const payload = {
       sub: user.id,
+      userId: user.userId,
       username: user.username,
       role: user.role.name,
       roleId: user.role.id,
@@ -189,7 +195,10 @@ export class AuthService {
   }
 
   private async createRefreshToken(userId: string, token: string): Promise<void> {
-    const expiresInDays = parseInt(this.configService.get<string>('jwt.refreshExpiresIn')?.replace('d', '') || '7', 10);
+    const expiresInDays = parseInt(
+      this.configService.get<string>('jwt.refreshExpiresIn')?.replace('d', '') || '7',
+      10,
+    );
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 

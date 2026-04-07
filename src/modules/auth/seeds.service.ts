@@ -15,7 +15,11 @@ export class SeedsService implements OnModuleInit {
   private async seedRoles() {
     const roles = [
       { name: 'ROOT', level: 'ROOT' as const, description: 'Super administrator with full access' },
-      { name: 'ADMIN', level: 'ADMIN' as const, description: 'Administrator with broad permissions' },
+      {
+        name: 'ADMIN',
+        level: 'ADMIN' as const,
+        description: 'Administrator with broad permissions',
+      },
       { name: 'MANAGER', level: 'MANAGER' as const, description: 'Manager with team oversight' },
       { name: 'USER', level: 'USER' as const, description: 'Standard user with basic access' },
     ];
@@ -31,7 +35,7 @@ export class SeedsService implements OnModuleInit {
 
   private async seedRootUser() {
     const existingRoot = await this.prisma.user.findUnique({
-      where: { username: '11111' },
+      where: { userId: '11111' },
     });
 
     if (!existingRoot) {
@@ -43,7 +47,8 @@ export class SeedsService implements OnModuleInit {
 
       await this.prisma.user.create({
         data: {
-          username: '11111',
+          userId: '11111',
+          username: 'root',
           email: 'root@localhost',
           password: hashedPassword,
           roleId: rootRole!.id,
@@ -76,11 +81,11 @@ export class SeedsService implements OnModuleInit {
 
     const adminRole = await this.prisma.role.findUnique({ where: { name: 'ADMIN' } });
     const permissionsList = await this.prisma.permission.findMany();
-    
+
     if (adminRole) {
       await this.prisma.role.update({
         where: { id: adminRole.id },
-        data: { permissions: { connect: permissionsList.map(p => ({ id: p.id })) } },
+        data: { permissions: { connect: permissionsList.map((p) => ({ id: p.id })) } },
       });
     }
   }

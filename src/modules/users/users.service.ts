@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma/prisma.service';
 import { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto/user.dto';
 import { CustomLogger } from '../../common/interfaces/custom-logger.service';
@@ -28,6 +34,7 @@ export class UsersService implements OnModuleInit {
     const existingUser = await this.prisma.user.findFirst({
       where: {
         OR: [
+          { userId: createUserDto.userId },
           { username: createUserDto.username },
           { email: createUserDto.email },
         ],
@@ -35,7 +42,7 @@ export class UsersService implements OnModuleInit {
     });
 
     if (existingUser) {
-      throw new ConflictException('Username or email already exists');
+      throw new ConflictException('UserId, username or email already exists');
     }
 
     let roleId = createUserDto.roleId;
@@ -51,6 +58,7 @@ export class UsersService implements OnModuleInit {
 
     const user = await this.prisma.user.create({
       data: {
+        userId: createUserDto.userId,
         username: createUserDto.username,
         email: createUserDto.email,
         password: hashedPassword,
@@ -74,6 +82,7 @@ export class UsersService implements OnModuleInit {
 
     if (search) {
       where.OR = [
+        { userId: { contains: search, mode: 'insensitive' } },
         { username: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
       ];
@@ -126,6 +135,15 @@ export class UsersService implements OnModuleInit {
       throw new NotFoundException('User not found');
     }
 
+    if (updateUserDto.userId && updateUserDto.userId !== user.userId) {
+      const existingUserId = await this.prisma.user.findFirst({
+        where: { userId: updateUserDto.userId },
+      });
+      if (existingUserId) {
+        throw new ConflictException('UserId already exists');
+      }
+    }
+
     if (updateUserDto.username && updateUserDto.username !== user.username) {
       const existingUsername = await this.prisma.user.findFirst({
         where: { username: updateUserDto.username },
@@ -175,9 +193,9 @@ export class UsersService implements OnModuleInit {
     return { message: 'User deleted successfully' };
   }
 
-  async findByUsername(username: string) {
+  async findByUserId(userId: string) {
     const user = await this.prisma.user.findUnique({
-      where: { username },
+      where: { userId },
       include: { role: { include: { permissions: true } } },
     });
 
@@ -195,7 +213,13 @@ export class UsersService implements OnModuleInit {
     });
   }
 
-  private async createAuditLog(oldValue: any, newValue: any, action: string, entity: string, entityId: string) {
+  private async createAuditLog(
+    oldValue: any,
+    newValue: any,
+    action: string,
+    entity: string,
+    entityId: string,
+  ) {
     await this.prisma.auditLog.create({
       data: {
         action,

@@ -65,8 +65,11 @@ JWT_REFRESH_EXPIRES_IN=7d
 
 Se crea automáticamente al iniciar:
 
-- **Usuario:** `root`
-- **Contraseña:** `11111`
+- **UserID:** `11111`
+- **Username:** `root`
+- **Contraseña:** `root`
+
+El login se realiza con **userId** y **contraseña**.
 
 ## Endpoints principales
 
