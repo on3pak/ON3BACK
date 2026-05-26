@@ -42,7 +42,7 @@ export class AuthController {
   @ApiOperation({ summary: 'User logout' })
   @ApiResponse({ status: 200, description: 'Logout successful' })
   logout(@Request() req: any) {
-    const userId = req.user?.id;
-    return this.authService.logout(userId);
+    const uid = req.user?.uid;
+    return this.authService.logout(uid);
   }
 }

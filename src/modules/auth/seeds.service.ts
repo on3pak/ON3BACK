@@ -8,7 +8,7 @@ export class SeedsService implements OnModuleInit {
 
   async onModuleInit() {
     await this.seedRoles();
-    await this.seedRootUser();
+    await this.seedTestUsers();
     await this.seedDefaultPermissions();
   }
 
@@ -33,26 +33,31 @@ export class SeedsService implements OnModuleInit {
     }
   }
 
-  private async seedRootUser() {
-    const existingRoot = await this.prisma.user.findUnique({
-      where: { userId: '11111' },
-    });
+  private async seedTestUsers() {
+    const testUsers = [
+      { email: '000001@on3.com', username: 'javier_martinez', fullName: 'Javier Martínez López', password: 'root', role: 'ROOT' as const },
+      { email: '000002@on3.com', username: 'ana_garcia', fullName: 'Ana García Rodríguez', password: 'admin', role: 'ADMIN' as const },
+      { email: '000003@on3.com', username: 'carlos_hernandez', fullName: 'Carlos Hernández Torres', password: 'manager', role: 'MANAGER' as const },
+      { email: '000004@on3.com', username: 'laura_perez', fullName: 'Laura Pérez Sánchez', password: 'user', role: 'USER' as const },
+    ];
 
-    if (!existingRoot) {
-      const rootRole = await this.prisma.role.findUnique({
-        where: { name: 'ROOT' },
-      });
-
-      const hashedPassword = await bcrypt.hash('root', 10);
-
-      await this.prisma.user.create({
-        data: {
-          userId: '11111',
-          username: 'root',
-          email: 'root@localhost',
+    for (const u of testUsers) {
+      const hashedPassword = await bcrypt.hash(u.password, 10);
+      await this.prisma.authUser.upsert({
+        where: { email: u.email },
+        update: {
+          username: u.username,
+          fullName: u.fullName,
           password: hashedPassword,
-          roleId: rootRole!.id,
-          isActive: true,
+          role: u.role,
+        },
+        create: {
+          email: u.email,
+          username: u.username,
+          fullName: u.fullName,
+          password: hashedPassword,
+          role: u.role,
+          status: 'OFFLINE',
         },
       });
     }

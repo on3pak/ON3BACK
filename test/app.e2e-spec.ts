@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { v4 as uuidv4 } from 'uuid';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -33,12 +34,12 @@ describe('AppController (e2e)', () => {
     it('/api/auth/login - should login with root credentials', async () => {
       const response = await request(app.getHttpServer())
         .post('/api/auth/login')
-        .send({ username: '11111', password: 'root' })
+        .send({ email: 'root@localhost', password: 'root' })
         .expect(200);
 
       expect(response.body).toHaveProperty('accessToken');
       expect(response.body).toHaveProperty('refreshToken');
-      expect(response.body.user).toHaveProperty('username', '11111');
+      expect(response.body.user).toHaveProperty('email', 'root@localhost');
 
       token = response.body.accessToken;
     });
@@ -46,7 +47,7 @@ describe('AppController (e2e)', () => {
     it('/api/auth/login - should reject invalid credentials', async () => {
       await request(app.getHttpServer())
         .post('/api/auth/login')
-        .send({ username: '11111', password: 'wrongpassword' })
+        .send({ email: 'root@localhost', password: 'wrongpassword' })
         .expect(401);
     });
 
@@ -54,8 +55,9 @@ describe('AppController (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/api/auth/register')
         .send({
-          username: `testuser${Date.now()}`,
           email: `test${Date.now()}@example.com`,
+          username: `testuser${Date.now()}`,
+          fullName: 'Test User',
           password: 'password123',
         })
         .expect(201);
@@ -95,7 +97,7 @@ describe('AppController (e2e)', () => {
     it('should refresh tokens', async () => {
       const loginResponse = await request(app.getHttpServer())
         .post('/api/auth/login')
-        .send({ username: '11111', password: 'root' });
+        .send({ email: 'root@localhost', password: 'root' });
 
       const refreshToken = loginResponse.body.refreshToken;
 
