@@ -50,6 +50,8 @@ export class SeedsService implements OnModuleInit {
           fullName: u.fullName,
           password: hashedPassword,
           role: u.role,
+          status: 'OFFLINE',
+          language: 'ES',
         },
         create: {
           email: u.email,
@@ -58,6 +60,7 @@ export class SeedsService implements OnModuleInit {
           password: hashedPassword,
           role: u.role,
           status: 'OFFLINE',
+          language: 'ES',
         },
       });
     }

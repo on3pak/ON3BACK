@@ -65,6 +65,7 @@ model AuthUser {
   username  String   @unique
   role      String   @default("USER")
   status    String   @default("OFFLINE")
+  language  String   @default("ES")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   refreshTokens RefreshToken[]

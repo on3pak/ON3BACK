@@ -55,6 +55,7 @@ export class AuthService {
         username: authUser.username,
         role: authUser.role,
         status: 'ONLINE',
+        language: authUser.language,
       },
     };
   }
@@ -86,6 +87,7 @@ export class AuthService {
         password: hashedPassword,
         role: 'USER',
         status: 'ONLINE',
+        language: registerDto.language?.toUpperCase() === 'EN' ? 'EN' : 'ES',
       },
     });
 
@@ -103,6 +105,7 @@ export class AuthService {
         username: authUser.username,
         role: authUser.role,
         status: 'ONLINE',
+        language: authUser.language,
       },
     };
   }
@@ -164,6 +167,7 @@ export class AuthService {
         username: storedToken.authUser.username,
         role: storedToken.authUser.role,
         status: storedToken.authUser.status,
+        language: storedToken.authUser.language,
       },
     };
   }
@@ -189,6 +193,7 @@ export class AuthService {
       username: authUser.username,
       fullName: authUser.fullName,
       role: authUser.role,
+      language: authUser.language,
     };
 
     const expiresIn = this.configService.get<string>('jwt.expiresIn') || '15m';
