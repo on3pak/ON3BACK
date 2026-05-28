@@ -25,10 +25,6 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
-    if (authUser.status === 'ONLINE') {
-      throw new UnauthorizedException('La sesión ya está activa');
-    }
-
     const isPasswordValid = await bcrypt.compare(loginDto.password, authUser.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Credenciales inválidas');
@@ -55,6 +51,7 @@ export class AuthService {
         username: authUser.username,
         role: authUser.role,
         status: 'ONLINE',
+        language: authUser.language,
       },
     };
   }
@@ -86,6 +83,7 @@ export class AuthService {
         password: hashedPassword,
         role: 'USER',
         status: 'ONLINE',
+        language: registerDto.language || 'ES',
       },
     });
 
@@ -103,6 +101,7 @@ export class AuthService {
         username: authUser.username,
         role: authUser.role,
         status: 'ONLINE',
+        language: authUser.language,
       },
     };
   }
@@ -164,6 +163,7 @@ export class AuthService {
         username: storedToken.authUser.username,
         role: storedToken.authUser.role,
         status: storedToken.authUser.status,
+        language: storedToken.authUser.language,
       },
     };
   }

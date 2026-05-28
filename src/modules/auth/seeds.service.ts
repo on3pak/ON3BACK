@@ -212,6 +212,7 @@ export class SeedsService implements OnModuleInit {
           password: hashedPassword,
           role: u.authRole,
           status: 'OFFLINE',
+          language: 'ES',
         },
         create: {
           email: u.authEmail,
@@ -220,6 +221,7 @@ export class SeedsService implements OnModuleInit {
           password: hashedPassword,
           role: u.authRole,
           status: 'OFFLINE',
+          language: 'ES',
         },
       });
     }

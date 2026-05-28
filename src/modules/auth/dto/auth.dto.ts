@@ -43,6 +43,11 @@ export class RegisterDto {
   @IsNotEmpty()
   @MinLength(6)
   password!: string;
+
+  @ApiPropertyOptional({ example: 'ES', enum: ['ES', 'EN'] })
+  @IsString()
+  @IsOptional()
+  language?: string;
 }
 
 export class AuthResponseDto {
@@ -60,5 +65,6 @@ export class AuthResponseDto {
     username: string;
     role: string;
     status: string;
+    language: string;
   };
 }

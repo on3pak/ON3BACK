@@ -278,7 +278,7 @@ model User {
   @@map("users")
 }
 
-// ─── AuthUser (adapted — id renamed, language removed, soft delete added) ───
+// ─── AuthUser (adapted — id renamed, soft delete added) ───
 
 model AuthUser {
   id        String   @id @default(uuid())
@@ -288,6 +288,7 @@ model AuthUser {
   username  String   @unique
   role      String   @default("USER")
   status    String   @default("OFFLINE")
+  language  String   @default("ES")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
