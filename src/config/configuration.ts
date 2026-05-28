@@ -21,6 +21,10 @@ export default () => ({
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     refreshInactivityDays: parseInt(process.env.JWT_REFRESH_INACTIVITY_DAYS || '30', 10),
   },
+  cors: {
+    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:4173'],
+    credentials: true,
+  },
   logging: {
     level: process.env.LOG_LEVEL || 'info',
     dir: process.env.LOG_DIR || 'logs',

@@ -22,6 +22,12 @@ async function bootstrap() {
   const appConfig = configService.get<any>('app');
   app.setGlobalPrefix(appConfig?.apiPrefix || 'api');
 
+  const corsConfig = configService.get<any>('cors');
+  app.enableCors({
+    origin: corsConfig?.origin || ['http://localhost:5173'],
+    credentials: corsConfig?.credentials ?? true,
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
