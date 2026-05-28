@@ -1,110 +1,46 @@
-import {
-  IsString,
-  IsEmail,
-  IsNotEmpty,
-  IsOptional,
-  IsBoolean,
-  IsUUID,
-  MinLength,
-  MaxLength,
-} from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, IsOptional, IsUUID, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { UserStatus } from '@prisma/client';
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'USER001' })
+  @ApiProperty({ example: 'emp_000001' })
   @IsString()
   @IsNotEmpty()
-  @MinLength(3)
-  @MaxLength(50)
-  userId: string;
-
-  @ApiProperty({ example: 'johndoe' })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(3)
-  @MaxLength(50)
-  username: string;
-
-  @ApiProperty({ example: 'john@example.com' })
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @ApiProperty({ example: 'password123' })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  password: string;
+  employeeId: string;
 
   @ApiPropertyOptional()
   @IsUUID()
   @IsOptional()
   roleId?: string;
-
-  @ApiPropertyOptional({ default: true })
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
 }
 
 export class UpdateUserDto {
-  @ApiPropertyOptional({ example: 'USER001' })
+  @ApiPropertyOptional({ example: 'm.torres' })
   @IsString()
   @IsOptional()
-  @MinLength(3)
-  @MaxLength(50)
-  userId?: string;
-
-  @ApiPropertyOptional({ example: 'johndoe' })
-  @IsString()
-  @IsOptional()
-  @MinLength(3)
-  @MaxLength(50)
   username?: string;
 
-  @ApiPropertyOptional({ example: 'john@example.com' })
-  @IsEmail()
-  @IsOptional()
-  email?: string;
-
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ example: 'Miguel Ángel Torres' })
   @IsString()
   @IsOptional()
-  @MinLength(6)
-  password?: string;
+  fullName?: string;
+
+  @ApiPropertyOptional({ enum: UserStatus })
+  @IsEnum(UserStatus)
+  @IsOptional()
+  status?: UserStatus;
 
   @ApiPropertyOptional()
   @IsUUID()
   @IsOptional()
   roleId?: string;
-
-  @ApiPropertyOptional()
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
 }
 
 export class UserQueryDto {
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  search?: string;
-
-  @ApiPropertyOptional({ enum: ['ROOT', 'ADMIN', 'MANAGER', 'USER'] })
-  @IsOptional()
-  @IsString()
-  role?: string;
-
-  @ApiPropertyOptional({ default: true })
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
-
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  page?: number;
-
-  @ApiPropertyOptional({ default: 10 })
-  @IsOptional()
-  limit?: number;
+  @ApiPropertyOptional() @IsOptional() @IsString() search?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() role?: string;
+  @ApiPropertyOptional({ enum: UserStatus }) @IsOptional() @IsEnum(UserStatus) status?: UserStatus;
+  @ApiPropertyOptional() @IsOptional() @IsString() cityId?: string;
+  @ApiPropertyOptional() @IsOptional() page?: number = 1;
+  @ApiPropertyOptional() @IsOptional() limit?: number = 10;
 }

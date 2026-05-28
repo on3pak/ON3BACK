@@ -21,7 +21,7 @@ export class AuthService {
       where: { email: loginDto.email },
     });
 
-    if (!authUser) {
+    if (!authUser || authUser.deletedAt) {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
@@ -35,27 +35,26 @@ export class AuthService {
     }
 
     await this.prisma.authUser.update({
-      where: { uid: authUser.uid },
+      where: { id: authUser.id },
       data: { status: 'ONLINE' },
     });
 
-    await this.revokeAllUserRefreshTokens(authUser.uid);
+    await this.revokeAllUserRefreshTokens(authUser.id);
 
     const tokens = await this.generateTokens(authUser);
-    await this.createRefreshToken(authUser.uid, tokens.refreshToken);
+    await this.createRefreshToken(authUser.id, tokens.refreshToken);
 
     this.logger.log(`Usuario autenticado: ${authUser.email}`, 'AuthService');
 
     return {
       ...tokens,
       user: {
-        uid: authUser.uid,
+        uid: authUser.id,
         email: authUser.email,
         fullName: authUser.fullName,
         username: authUser.username,
         role: authUser.role,
         status: 'ONLINE',
-        language: authUser.language,
       },
     };
   }
@@ -87,25 +86,23 @@ export class AuthService {
         password: hashedPassword,
         role: 'USER',
         status: 'ONLINE',
-        language: registerDto.language?.toUpperCase() === 'EN' ? 'EN' : 'ES',
       },
     });
 
     const tokens = await this.generateTokens(authUser);
-    await this.createRefreshToken(authUser.uid, tokens.refreshToken);
+    await this.createRefreshToken(authUser.id, tokens.refreshToken);
 
     this.logger.log(`Usuario registrado: ${authUser.email}`, 'AuthService');
 
     return {
       ...tokens,
       user: {
-        uid: authUser.uid,
+        uid: authUser.id,
         email: authUser.email,
         fullName: authUser.fullName,
         username: authUser.username,
         role: authUser.role,
         status: 'ONLINE',
-        language: authUser.language,
       },
     };
   }
@@ -121,7 +118,7 @@ export class AuthService {
     }
 
     if (storedToken.revoked) {
-      await this.revokeAllUserRefreshTokens(storedToken.authUserUid);
+      await this.revokeAllUserRefreshTokens(storedToken.authUserId);
       throw new UnauthorizedException('El token de actualización ha sido revocado');
     }
 
@@ -138,7 +135,7 @@ export class AuthService {
         where: { id: storedToken.id },
         data: { revoked: true, revokedAt: new Date() },
       });
-      await this.revokeAllUserRefreshTokens(storedToken.authUserUid);
+      await this.revokeAllUserRefreshTokens(storedToken.authUserId);
       throw new UnauthorizedException('Token de actualización revocado por inactividad');
     }
 
@@ -154,32 +151,31 @@ export class AuthService {
       data: { revoked: true },
     });
 
-    await this.createRefreshToken(storedToken.authUserUid, tokens.refreshToken);
+    await this.createRefreshToken(storedToken.authUserId, tokens.refreshToken);
 
     this.logger.log(`Tokens renovados para: ${storedToken.authUser.email}`, 'AuthService');
 
     return {
       ...tokens,
       user: {
-        uid: storedToken.authUser.uid,
+        uid: storedToken.authUser.id,
         email: storedToken.authUser.email,
         fullName: storedToken.authUser.fullName,
         username: storedToken.authUser.username,
         role: storedToken.authUser.role,
         status: storedToken.authUser.status,
-        language: storedToken.authUser.language,
       },
     };
   }
 
-  async logout(uid: string) {
-    if (uid) {
+  async logout(id: string) {
+    if (id) {
       await this.prisma.authUser.update({
-        where: { uid },
+        where: { id },
         data: { status: 'OFFLINE' },
       });
-      await this.revokeAllUserRefreshTokens(uid);
-      this.logger.log(`Usuario desconectado: ${uid}`, 'AuthService');
+      await this.revokeAllUserRefreshTokens(id);
+      this.logger.log(`Usuario desconectado: ${id}`, 'AuthService');
     }
   }
 
@@ -188,12 +184,11 @@ export class AuthService {
     const jtiRefresh = uuidv4();
 
     const payload = {
-      sub: authUser.uid,
+      sub: authUser.id,
       email: authUser.email,
       username: authUser.username,
       fullName: authUser.fullName,
       role: authUser.role,
-      language: authUser.language,
     };
 
     const expiresIn = this.configService.get<string>('jwt.expiresIn') || '15m';
@@ -219,7 +214,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private async createRefreshToken(authUserUid: string, token: string): Promise<void> {
+  private async createRefreshToken(authUserId: string, token: string): Promise<void> {
     const expiresInDays = parseInt(
       this.configService.get<string>('jwt.refreshExpiresIn')?.replace('d', '') || '7',
       10,
@@ -230,15 +225,15 @@ export class AuthService {
     await this.prisma.refreshToken.create({
       data: {
         token,
-        authUserUid,
+        authUserId,
         expiresAt,
       },
     });
   }
 
-  private async revokeAllUserRefreshTokens(authUserUid: string): Promise<void> {
+  private async revokeAllUserRefreshTokens(authUserId: string): Promise<void> {
     await this.prisma.refreshToken.updateMany({
-      where: { authUserUid, revoked: false },
+      where: { authUserId, revoked: false },
       data: { revoked: true, revokedAt: new Date() },
     });
   }

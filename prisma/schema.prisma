@@ -14,15 +14,67 @@ enum RoleLevel {
   USER
 }
 
+enum VehicleType {
+  BARREDORA
+  CAMION
+  FURGONETA
+  TURISMO
+  PORTER
+}
+
+enum VehicleStatus {
+  ACTIVO
+  MANTENIMIENTO
+  AVERIADO
+  BAJA
+}
+
+enum FuelType {
+  DIESEL
+  GASOLINA
+  ELECTRICO
+  GAS
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+}
+
+enum InventoryCategory {
+  ropa
+  epi
+  maquinaria
+}
+
+enum WorkCenterStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum VacationMonth {
+  julio
+  agosto
+  septiembre
+  partidas
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// ─── Existing RBAC models (unchanged) ───
+
 model Role {
-  id          String     @id @default(uuid())
-  name        String     @unique
-  level       RoleLevel  @default(USER)
+  id          String       @id @default(uuid())
+  name        String       @unique
+  level       RoleLevel    @default(USER)
   description String?
   permissions Permission[]
   users       User[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@map("roles")
 }
@@ -40,34 +92,206 @@ model Permission {
   @@map("permissions")
 }
 
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  user      User?    @relation("UserAuditLogs", fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  oldValues Json?    @map("old_values")
+  newValues Json?    @map("new_values")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+// ─── City ───
+
+model City {
+  id        String   @id
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdBy String?  @map("created_by")
+  updatedBy String?  @map("updated_by")
+  deletedBy String?  @map("deleted_by")
+
+  workCenters   WorkCenter[]
+  employees     Employee[]
+  users         User[]
+  inventoryItems InventoryItem[]
+
+  @@map("cities")
+}
+
+// ─── Lookup tables (employee) ───
+
+model EmployeeCategory {
+  id   String @id
+  name String @db.VarChar(100)
+  employees Employee[]
+
+  @@map("employee_categories")
+}
+
+model EmployeeStatus {
+  id   String @id
+  name String @db.VarChar(100)
+  employees Employee[]
+
+  @@map("employee_statuses")
+}
+
+model WorkDay {
+  id   String @id
+  name String @db.VarChar(100)
+  employees Employee[]
+
+  @@map("work_days")
+}
+
+model Shift {
+  id   String @id
+  name String @db.VarChar(100)
+  employees Employee[]
+
+  @@map("shifts")
+}
+
+model ContractType {
+  id   String @id
+  name String @db.VarChar(100)
+  employees Employee[]
+
+  @@map("contract_types")
+}
+
+// ─── WorkCenter ───
+
+model WorkCenter {
+  id        String          @id
+  name      String          @db.VarChar(100)
+  address   String          @db.VarChar(255)
+  cityId    String          @map("city_id")
+  city      City            @relation(fields: [cityId], references: [id])
+  status    WorkCenterStatus @default(ACTIVE)
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+  deletedAt DateTime?       @map("deleted_at")
+  createdBy String?         @map("created_by")
+  updatedBy String?         @map("updated_by")
+  deletedBy String?         @map("deleted_by")
+
+  employees Employee[]
+  vehicles  Vehicle[]
+  services  Service[]
+  inventoryItems InventoryItem[]
+
+  @@map("work_centers")
+}
+
+// ─── Employee ───
+
+model Employee {
+  id               String         @id
+  userId           String?        @unique @map("user_id")
+  name             String         @db.VarChar(100)
+  lastName1        String         @map("last_name1") @db.VarChar(100)
+  lastName2        String         @map("last_name2") @db.VarChar(100)
+  email            String         @unique @db.VarChar(255)
+  phone            String         @db.VarChar(20)
+  personalEmail    String?        @map("personal_email") @db.VarChar(255)
+  phoneFixed       String?        @map("phone_fixed") @db.VarChar(20)
+  iban             String?        @db.VarChar(34)
+  locker           String?        @db.VarChar(50)
+  cityId           String         @map("city_id")
+  city             City           @relation(fields: [cityId], references: [id])
+  workCenterId     String         @map("work_center_id")
+  workCenter       WorkCenter     @relation(fields: [workCenterId], references: [id])
+  workDayId        String         @map("work_day_id")
+  workDay          WorkDay        @relation(fields: [workDayId], references: [id])
+  categoryId       String         @map("category_id")
+  category         EmployeeCategory @relation(fields: [categoryId], references: [id])
+  statusId         String         @map("status_id")
+  status           EmployeeStatus @relation(fields: [statusId], references: [id])
+  active           Boolean        @default(true)
+  shiftId          String         @map("shift_id")
+  shift            Shift          @relation(fields: [shiftId], references: [id])
+  schedule         String         @db.VarChar(50)
+  startTime        String         @map("start_time") @db.VarChar(5)
+  endTime          String         @map("end_time") @db.VarChar(5)
+  contractTypeId   String         @map("contract_type_id")
+  contractType     ContractType   @relation(fields: [contractTypeId], references: [id])
+  contractStartDate DateTime      @map("contract_start_date")
+  contractEndDate  DateTime?      @map("contract_end_date")
+  irpf             Decimal        @default(0) @db.Decimal(5, 2)
+  vacationMonth    VacationMonth? @map("vacation_month")
+  vacationYear     Int?           @map("vacation_year")
+  vacationDays     Int            @default(22) @map("vacation_days")
+  ownDays          Int            @default(0) @map("own_days")
+  accumulatedDays  Int            @default(0) @map("accumulated_days")
+  excessDays       Int            @default(0) @map("excess_days")
+  medicalCheck     Boolean        @default(false) @map("medical_check")
+  worksHolidays    Boolean        @default(false) @map("works_holidays")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  deletedAt        DateTime?      @map("deleted_at")
+  createdBy        String?        @map("created_by")
+  updatedBy        String?        @map("updated_by")
+  deletedBy        String?        @map("deleted_by")
+
+  user             User?          
+  assignedVehicles  Vehicle[]       @relation("AssignedEmployee")
+  assignedInventory InventoryItem[] @relation("AssignedTo")
+
+  @@map("employees")
+}
+
+// ─── User (refactored — now linked to Employee and City) ───
+
 model User {
-  id            String        @id @default(uuid())
-  userId        String        @unique
-  username      String        @unique
-  email         String        @unique
-  password      String
-  isActive      Boolean       @default(true)
-  roleId        String
-  role          Role          @relation(fields: [roleId], references: [id])
-  auditLogs     AuditLog[]    @relation("UserAuditLogs")
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  lastLoginAt   DateTime?
+  id         String     @id @default(uuid())
+  employeeId String     @unique @map("employee_id")
+  employee   Employee   @relation(fields: [employeeId], references: [id])
+  username   String     @unique
+  email      String     @unique
+  fullName   String     @map("full_name") @db.VarChar(255)
+  roleId     String     @map("role_id")
+  role       Role       @relation(fields: [roleId], references: [id])
+  status     UserStatus @default(ACTIVE)
+  cityId     String     @map("city_id")
+  city       City       @relation(fields: [cityId], references: [id])
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  deletedAt  DateTime?  @map("deleted_at")
+  createdBy  String?    @map("created_by")
+  updatedBy  String?    @map("updated_by")
+  deletedBy  String?    @map("deleted_by")
+
+  auditLogs AuditLog[] @relation("UserAuditLogs")
 
   @@map("users")
 }
 
+// ─── AuthUser (adapted — id renamed, language removed, soft delete added) ───
+
 model AuthUser {
-  uid       String   @id @default(uuid())
+  id        String   @id @default(uuid())
   email     String   @unique
   password  String
-  fullName  String   @map("full_name")
+  fullName  String   @map("full_name") @db.VarChar(255)
   username  String   @unique
   role      String   @default("USER")
   status    String   @default("OFFLINE")
-  language  String   @default("ES")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy String?  @map("deleted_by")
   refreshTokens RefreshToken[]
 
   @@map("auth_users")
@@ -76,29 +300,161 @@ model AuthUser {
 model RefreshToken {
   id          String   @id @default(uuid())
   token       String   @unique
-  authUserUid String   @map("auth_user_uid")
-  authUser    AuthUser @relation(fields: [authUserUid], references: [uid], onDelete: Cascade)
-  expiresAt   DateTime
+  authUserId  String   @map("auth_user_id")
+  authUser    AuthUser @relation(fields: [authUserId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime @map("expires_at")
   revoked     Boolean  @default(false)
-  revokedAt   DateTime?
-  lastUsedAt  DateTime @default(now())
-  createdAt   DateTime @default(now())
+  revokedAt   DateTime? @map("revoked_at")
+  lastUsedAt  DateTime @default(now()) @map("last_used_at")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   @@map("refresh_tokens")
 }
 
-model AuditLog {
-  id         String   @id @default(uuid())
-  userId     String?
-  user       User?    @relation("UserAuditLogs", fields: [userId], references: [id])
-  action     String
-  entity     String
-  entityId   String?
-  oldValues  Json?
-  newValues  Json?
-  ipAddress  String?
-  userAgent  String?
-  createdAt DateTime @default(now())
+// ─── Vehicle ───
 
-  @@map("audit_logs")
+model VehicleTypeOption {
+  id   String      @id
+  name String      @db.VarChar(100)
+  type VehicleType
+  vehicles Vehicle[]
+
+  @@map("vehicle_type_options")
+}
+
+model Vehicle {
+  id                String         @id
+  licensePlate      String         @unique @map("license_plate") @db.VarChar(20)
+  model             String         @db.VarChar(100)
+  brand             String         @db.VarChar(100)
+  vehicleTypeId     String         @map("vehicle_type_id")
+  vehicleType       VehicleTypeOption @relation(fields: [vehicleTypeId], references: [id])
+  status            VehicleStatus  @default(ACTIVO)
+  vin               String         @unique @db.VarChar(50)
+  registrationDate  DateTime       @map("registration_date")
+  itvExpiration     DateTime       @map("itv_expiration")
+  insuranceExpiration DateTime     @map("insurance_expiration")
+  taxExpiration     DateTime       @map("tax_expiration")
+  fuelType          FuelType       @map("fuel_type")
+  kilometers        Int            @default(0)
+  lastReviewDate    DateTime?      @map("last_review_date")
+  nextReviewKilometers Int?        @map("next_review_kilometers")
+  workCenterId      String         @map("work_center_id")
+  workCenter        WorkCenter     @relation(fields: [workCenterId], references: [id])
+  assignedEmployeeId String?       @map("assigned_employee_id")
+  assignedEmployee  Employee?      @relation("AssignedEmployee", fields: [assignedEmployeeId], references: [id])
+  observations      String?        @db.Text
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  deletedAt         DateTime?      @map("deleted_at")
+  createdBy         String?        @map("created_by")
+  updatedBy         String?        @map("updated_by")
+  deletedBy         String?        @map("deleted_by")
+
+  @@map("vehicles")
+}
+
+// ─── Service ───
+
+model Service {
+  id           String      @id
+  workCenterId String      @map("work_center_id")
+  workCenter   WorkCenter  @relation(fields: [workCenterId], references: [id])
+  name         String      @db.VarChar(100)
+  type         String      @db.VarChar(100)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  deletedAt    DateTime?   @map("deleted_at")
+  createdBy    String?     @map("created_by")
+  updatedBy    String?     @map("updated_by")
+  deletedBy    String?     @map("deleted_by")
+
+  tasks ServiceTask[]
+
+  @@map("services")
+}
+
+model ServiceTask {
+  id          String     @id @default(uuid())
+  serviceId   String     @map("service_id")
+  service     Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  dayIndex    Int        @map("day_index")
+  taskIndex   Int        @map("task_index")
+  description String     @db.Text
+  status      TaskStatus @default(PENDING)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+
+  @@map("service_tasks")
+}
+
+// ─── Inventory ───
+
+model InventoryCategoryOption {
+  id    String           @id
+  name  String           @db.VarChar(100)
+  value InventoryCategory
+
+  @@map("inventory_category_options")
+}
+
+model InventorySubtype {
+  id       String           @id
+  category InventoryCategory
+  name     String           @db.VarChar(100)
+  items    InventoryItem[]
+
+  @@map("inventory_subtypes")
+}
+
+model InventoryStatus {
+  id    String @id
+  name  String @db.VarChar(100)
+  items InventoryItem[]
+
+  @@map("inventory_statuses")
+}
+
+model InventoryItem {
+  id              String            @id
+  name            String            @db.VarChar(100)
+  description     String?           @db.Text
+  category        InventoryCategory
+  subtypeId       String            @map("subtype_id")
+  subtype         InventorySubtype  @relation(fields: [subtypeId], references: [id])
+  statusId        String            @map("status_id")
+  status          InventoryStatus   @relation(fields: [statusId], references: [id])
+  serialNumber    String?           @map("serial_number") @db.VarChar(100)
+  quantity        Int               @default(0)
+  minStock        Int               @default(0) @map("min_stock")
+  unit            String            @db.VarChar(50)
+  cityId          String            @map("city_id")
+  city            City              @relation(fields: [cityId], references: [id])
+  workCenterId    String            @map("work_center_id")
+  workCenter      WorkCenter        @relation(fields: [workCenterId], references: [id])
+  location        String            @db.VarChar(100)
+  assignedTo      String?           @map("assigned_to")
+  assignedEmployee Employee?        @relation("AssignedTo", fields: [assignedTo], references: [id])
+  size            String?           @db.VarChar(10)
+  color           String?           @db.VarChar(50)
+  material        String?           @db.VarChar(100)
+  gender          String?           @db.VarChar(20)
+  certification   String?           @db.VarChar(100)
+  safetyStandard  String?           @map("safety_standard") @db.VarChar(100)
+  brand           String?           @db.VarChar(100)
+  model           String?           @db.VarChar(100)
+  expirationDate  DateTime?         @map("expiration_date")
+  warrantyExpiration DateTime?      @map("warranty_expiration")
+  lastMaintenance DateTime?         @map("last_maintenance")
+  nextMaintenance DateTime?         @map("next_maintenance")
+  notes           String?           @db.Text
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  deletedAt       DateTime?         @map("deleted_at")
+  createdBy       String?           @map("created_by")
+  updatedBy       String?           @map("updated_by")
+  deletedBy       String?           @map("deleted_by")
+
+  @@map("inventory_items")
 }

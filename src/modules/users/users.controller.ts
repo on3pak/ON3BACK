@@ -1,12 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto, UpdateUserDto, UserQueryDto } from './dto/user.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles, MinLevel } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
-@ApiTags('Users')
+@ApiTags('Usuarios')
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
@@ -15,53 +16,46 @@ export class UsersController {
 
   @Post()
   @Roles('ROOT', 'ADMIN')
-  @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({ status: 201, description: 'User created successfully' })
-  @ApiResponse({ status: 409, description: 'Username or email already exists' })
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  @ApiOperation({ summary: 'Crear usuario desde empleado' })
+  @ApiResponse({ status: 201, description: 'Usuario creado correctamente' })
+  @ApiResponse({ status: 409, description: 'El empleado ya tiene usuario o el email ya existe' })
+  create(@Body() createUserDto: CreateUserDto, @CurrentUser() user: any) {
+    return this.usersService.create(createUserDto, user?.uid);
   }
 
   @Get()
   @MinLevel(2)
-  @ApiOperation({ summary: 'Get all users with pagination and filters' })
+  @ApiOperation({ summary: 'Listar usuarios' })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'role', required: false })
-  @ApiQuery({ name: 'isActive', required: false })
+  @ApiQuery({ name: 'status', required: false })
+  @ApiQuery({ name: 'cityId', required: false })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
-  @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
   findAll(@Query() query: UserQueryDto) {
     return this.usersService.findAll(query);
   }
 
   @Get(':id')
   @MinLevel(2)
-  @ApiOperation({ summary: 'Get a user by ID' })
-  @ApiResponse({ status: 200, description: 'User retrieved successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
+  @ApiOperation({ summary: 'Obtener usuario por ID' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
   @Patch(':id')
   @Roles('ROOT', 'ADMIN')
-  @ApiOperation({ summary: 'Update a user' })
-  @ApiResponse({ status: 200, description: 'User updated successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
-    return this.usersService.update(id, updateUserDto);
+  @ApiOperation({ summary: 'Actualizar usuario' })
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @CurrentUser() user: any) {
+    return this.usersService.update(id, updateUserDto, user?.uid);
   }
 
   @Delete(':id')
   @Roles('ROOT', 'ADMIN')
-  @ApiOperation({ summary: 'Delete a user' })
-  @ApiResponse({ status: 200, description: 'User deleted successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.usersService.remove(id);
+  @ApiOperation({ summary: 'Eliminar usuario (soft-delete, cascada a AuthUser)' })
+  @ApiResponse({ status: 200, description: 'Usuario eliminado correctamente' })
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.usersService.remove(id, user?.uid);
   }
 }
