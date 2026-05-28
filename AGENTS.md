@@ -6,7 +6,7 @@ NestJS 11, PostgreSQL 15, Prisma 5.22.0 (pinned — newer breaks schema), TypeSc
 ## Dev Commands
 | Command | What |
 |---|---|
-| `npm run start:dev` | ts-node + tsconfig-paths |
+| `npm run start:dev` | ts-node-dev --respawn (auto-reload en cambios) |
 | `npm run build` | tsc -p tsconfig.build.json |
 | `npm run test` | jest (unit tests in `test/`) |
 | `npm run test:e2e` | jest --config ./test/jest-e2e.json |
@@ -26,12 +26,12 @@ Test order: `npm run lint` → `npm run test` → `npm run test:e2e`
 - Db connection: `DATABASE_URL` env var (Prisma)
 
 ## Auth
-- Login uses `userId` (not username) + password
+- Login uses `email` (not username) + password
 - POST `/api/auth/login` → `{ accessToken, refreshToken, user }` — revokes ALL prior refresh tokens
 - POST `/api/auth/refresh` → new token pair (old one revoked)
 - POST `/api/auth/logout` (JWT required) → revokes all tokens
 - Inactivity revoke after `JWT_REFRESH_INACTIVITY_DAYS` (default 30)
-- Default root: userId=`11111`, username=`root`, password=`root`
+- Default root: email=`000001@on3.com`, password=`root`
 
 ## Role Hierarchy & Guards
 ROOT(4) > ADMIN(3) > MANAGER(2) > USER(1)
@@ -59,7 +59,14 @@ ROOT(4) > ADMIN(3) > MANAGER(2) > USER(1)
 ## Docker
 - `Dockerfile` uses `node:20-bookworm`, CMD `npm run start:dev` (dev-focused)
 - `.dockerignore` skips `.env`, `node_modules`, `dist`, `logs`
-- No docker-compose files in repo (presumably managed externally)
+- docker-compose.yml en `D:\PROYECTOS\DOCKER\DOCKER-DEV\` (externo al repo)
+- Volumen monta `./ON3BACK:/app` (excluye node_modules) — cambios en código se reflejan al instante
+- `ts-node-dev --respawn` reinicia el proceso automáticamente al modificar cualquier archivo
+- Rebuild de imagen solo necesario cuando cambia `Dockerfile` o dependencias:
+  ```
+  docker compose build backend
+  docker compose up -d backend
+  ```
 
 ## Key Config (`.env`)
 `DATABASE_*` → `DATABASE_URL` for Prisma. Two JWT secrets: `JWT_SECRET` + `JWT_REFRESH_SECRET`.
