@@ -19,7 +19,7 @@ Respuesta:
 {
   "accessToken": "eyJ...",
   "refreshToken": "eyJ...",
-  "user": { "uid": "...", "email": "...", "fullName": "...", "username": "...", "role": "ROOT", "status": "ONLINE" }
+  "user": { "uid": "...", "email": "...", "fullName": "...", "username": "...", "role": "ROOT", "status": "ONLINE", "language": "ES" }
 }
 ```
 
@@ -54,7 +54,8 @@ Revoca todos los refresh tokens del usuario.
   fullName: string,
   username: string,
   role: { name: string },  // "ROOT" | "ADMIN" | "MANAGER" | "USER"
-  status: string
+  status: string,
+  language: string  // "ES" | "EN"
 }
 ```
 
@@ -111,7 +112,7 @@ Revoca todos los refresh tokens del usuario.
 | Método | Ruta | Auth | Body |
 |--------|------|------|------|
 | POST | `/api/auth/login` | — | `{ email, password }` |
-| POST | `/api/auth/register` | — | `{ email, username, fullName, password }` |
+| POST | `/api/auth/register` | — | `{ email, username, fullName, password, language? }` |
 | POST | `/api/auth/refresh` | — | `{ refreshToken }` |
 | POST | `/api/auth/logout` | JWT | — |
 

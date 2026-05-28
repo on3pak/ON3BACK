@@ -22,7 +22,7 @@ export default () => ({
     refreshInactivityDays: parseInt(process.env.JWT_REFRESH_INACTIVITY_DAYS || '30', 10),
   },
   cors: {
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:4173'],
+    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173', 'http://localhost:4173', 'http://localhost:4200'],
     credentials: true,
   },
   logging: {
